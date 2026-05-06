@@ -11,6 +11,10 @@ const creator = createCreator({
 });
 
 const templates = getTemplates();
+if (!templates["After First Call"]?.includes("Thank you again for taking the time to chat today")) {
+  throw new Error("Validation failed: After First Call template did not import from the After Interview section");
+}
+
 const firstBody = renderTemplate(templates["First Touch Outreach"], creator);
 await sendEmail(creator, {
   stage: "First Touch Outreach",
