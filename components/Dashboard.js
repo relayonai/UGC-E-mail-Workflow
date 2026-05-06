@@ -26,6 +26,13 @@ const EMAIL_FLOW_STEPS = [
   { stage: "Retainer Offer", label: "Retainer", response: "Reply" }
 ];
 
+const STATUS_ITEMS = [
+  { key: "offer_status", label: "Offer", done: (value) => value === "accepted" },
+  { key: "invoice_status", label: "Invoice", done: (value) => value === "received" },
+  { key: "content_status", label: "Content", done: (value) => value === "received" },
+  { key: "approval_status", label: "Approval", done: (value) => value === "approved" }
+];
+
 function statusPill(value) {
   if (["accepted", "received", "approved", "content sent", "invoice sent", "approval"].includes(value)) return "ok";
   if (["declined", "missing"].includes(value)) return "danger";
@@ -35,6 +42,21 @@ function statusPill(value) {
 function shortDate(value) {
   if (!value) return "-";
   return value.slice(0, 10);
+}
+
+function longDateTime(value) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function messagePreview(value = "") {
+  const compact = value.replace(/\s+/g, " ").trim();
+  return compact.length > 180 ? `${compact.slice(0, 180)}...` : compact;
 }
 
 function latestMessage(creator) {
@@ -51,6 +73,19 @@ function reviewTicks(message) {
 
 function reviewSummary(message) {
   return message?.review?.summary || "";
+}
+
+function messageLabel(message) {
+  if (message.direction === "outbound") return message.stage || "Email sent";
+  return reviewTicks(message)[0]?.label || message.intent || "Reply received";
+}
+
+function messageTime(message) {
+  return longDateTime(message.sent_at || message.received_at);
+}
+
+function syncUpdateCount(items) {
+  return items.reduce((count, item) => count + (item.checklist_updates?.length || 0), 0);
 }
 
 function hasOutboundStage(creator, stage) {
@@ -436,85 +471,101 @@ export default function Dashboard() {
               <div className="panel-body">
                 {(() => {
                   const latestReply = latestInboundMessage(selected);
-                  return latestReply ? (
-                    <div className="latest-response">
-                      <div className="latest-response-head">
-                        <strong>Latest Creator Response</strong>
-                        <span className={`pill ${statusPill(latestReply.intent)}`}>{latestReply.intent || "received"}</span>
+                  const latest = latestMessage(selected);
+                  const updates = syncUpdateCount(syncDetails);
+                  return (
+                    <div className="workspace-console">
+                      <div className="workspace-hero">
+                        <div className="workspace-identity">
+                          <span className="label">active creator</span>
+                          <strong>{selected.name}</strong>
+                          <span>{selected.email}</span>
+                        </div>
+                        <span className={`pill ${statusPill(selected.workflow_stage)}`}>{selected.workflow_stage}</span>
                       </div>
-                      {latestReply.subject && <span className="latest-response-subject">{latestReply.subject}</span>}
-                      {reviewSummary(latestReply) && <span className="review-summary">{reviewSummary(latestReply)}</span>}
-                      {reviewTicks(latestReply).length > 0 && (
-                        <div className="review-ticks">
-                          {reviewTicks(latestReply).map((item) => (
-                            <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+
+                      <div className="priority-box">
+                        <div>
+                          <span className="label">next action</span>
+                          <strong>{selected.next_action || workflow[selected.workflow_stage]?.nextAction || "-"}</strong>
+                        </div>
+                        <div>
+                          <span className="label">due</span>
+                          <strong>{shortDate(selected.next_action_date)}</strong>
+                        </div>
+                        <div>
+                          <span className="label">latest activity</span>
+                          <strong>{latest ? `${messageLabel(latest)} · ${messageTime(latest)}` : "No emails yet"}</strong>
+                        </div>
+                      </div>
+
+                      <div className="workspace-checklist">
+                        {STATUS_ITEMS.map((item) => {
+                          const value = selected[item.key] || "";
+                          const done = item.done(value);
+                          return (
+                            <div key={item.key} className={done ? "check-card done" : "check-card"}>
+                              <span className="check-dot">{done ? "✓" : ""}</span>
+                              <div>
+                                <span>{item.label}</span>
+                                <strong>{value || "-"}</strong>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {error && <div className="notice danger">{error}</div>}
+                      {syncResult && (
+                        <div className="sync-summary">
+                          <strong>{updates ? `${updates} checklist update(s) applied` : "Inbox sync complete"}</strong>
+                          <span>{syncResult}</span>
+                        </div>
+                      )}
+                      {syncDetails.length > 0 && (
+                        <div className="sync-detail-list smart">
+                          {syncDetails.map((item) => (
+                            <div key={`${item.creator_id}-${item.subject}-${item.intent}`}>
+                              <strong>{item.creator_name}</strong>
+                              <span>{item.summary || item.intent || "received"} - {item.subject || item.from}</span>
+                              {item.checklist_updates?.length > 0 && (
+                                <div className="review-ticks compact">
+                                  {item.checklist_updates.map((update) => (
+                                    <span key={`${update.key}-${update.value}`} className="review-tick">{update.label}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}
-                      <pre>{latestReply.body}</pre>
-                    </div>
-                  ) : null;
-                })()}
-                {error && <div className="notice danger">{error}</div>}
-                {syncResult && <div className="notice ok">{syncResult}</div>}
-                {syncDetails.length > 0 && (
-                  <div className="sync-detail-list">
-                    {syncDetails.map((item) => (
-                      <div key={`${item.creator_id}-${item.subject}-${item.intent}`}>
-                        <strong>{item.creator_name}</strong>
-                        <span>{item.summary || item.intent || "received"} - {item.subject || item.from}</span>
-                        {item.checklist_updates?.length > 0 && (
-                          <div className="review-ticks compact">
-                            {item.checklist_updates.map((update) => (
-                              <span key={`${update.key}-${update.value}`} className="review-tick">{update.label}</span>
-                            ))}
+
+                      {latestReply ? (
+                        <div className="latest-response smart">
+                          <div className="latest-response-head">
+                            <div>
+                              <span className="label">latest creator response</span>
+                              <strong>{messageLabel(latestReply)}</strong>
+                            </div>
+                            <span className={`pill ${statusPill(latestReply.intent)}`}>{latestReply.intent || "received"}</span>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="workspace-title">
-                  <div>
-                    <strong>{selected.name}</strong>
-                    <span>{selected.email}</span>
-                  </div>
-                  <span className={`pill ${statusPill(selected.workflow_stage)}`}>{selected.workflow_stage}</span>
-                </div>
-                <div className="status-grid">
-                  <div>
-                    <span className="label">next action</span>
-                    <strong>{selected.next_action || "-"}</strong>
-                  </div>
-                  <div>
-                    <span className="label">next action date</span>
-                    <strong>{shortDate(selected.next_action_date)}</strong>
-                  </div>
-                  <div>
-                    <span className="label">offer</span>
-                    <strong>{selected.offer_status}</strong>
-                  </div>
-                  <div>
-                    <span className="label">invoice</span>
-                    <strong>{selected.invoice_status}</strong>
-                  </div>
-                  <div>
-                    <span className="label">content</span>
-                    <strong>{selected.content_status}</strong>
-                  </div>
-                  <div>
-                    <span className="label">approval</span>
-                    <strong>{selected.approval_status}</strong>
-                  </div>
-                  <div>
-                    <span className="label">last email sent</span>
-                    <strong>{shortDate(selected.last_email_sent)}</strong>
-                  </div>
-                  <div>
-                    <span className="label">last reply</span>
-                    <strong>{shortDate(selected.last_reply)}</strong>
-                  </div>
-                </div>
+                          {latestReply.subject && <span className="latest-response-subject">{latestReply.subject}</span>}
+                          {reviewSummary(latestReply) && <span className="review-summary">{reviewSummary(latestReply)}</span>}
+                          {reviewTicks(latestReply).length > 0 && (
+                            <div className="review-ticks">
+                              {reviewTicks(latestReply).map((item) => (
+                                <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                              ))}
+                            </div>
+                          )}
+                          <pre>{latestReply.body}</pre>
+                        </div>
+                      ) : (
+                        <div className="empty compact-empty">No creator replies yet.</div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="empty">Select a creator card to open their workspace.</div>
@@ -619,25 +670,37 @@ export default function Dashboard() {
           <section className="section">
             <div className="section-header">
               <h3>Previous Emails</h3>
+              {selected?.message_history?.length ? <span className="section-count">{selected.message_history.length} total</span> : null}
             </div>
-            <div className="panel-body message-list">
+            <div className="panel-body email-timeline">
               {selected?.message_history?.length ? (
                 [...selected.message_history].reverse().map((message) => (
-                  <article key={message.id} className="message">
-                    <div className="message-meta">
-                      <span>{message.direction} {message.intent ? `- ${message.intent}` : ""} {message.channel ? `- ${message.channel}` : ""}</span>
-                      <span>{shortDate(message.sent_at || message.received_at)}</span>
-                    </div>
-                    {message.subject && <strong className="message-subject">{message.subject}</strong>}
-                    {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
-                    {reviewTicks(message).length > 0 && (
-                      <div className="review-ticks">
-                        {reviewTicks(message).map((item) => (
-                          <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
-                        ))}
+                  <article key={message.id} className={`timeline-message ${message.direction}`}>
+                    <div className="timeline-marker" aria-hidden="true" />
+                    <div className="timeline-card">
+                      <div className="timeline-top">
+                        <div>
+                          <span className="timeline-kicker">{message.direction === "outbound" ? "Sent email" : "Creator reply"}</span>
+                          <strong>{messageLabel(message)}</strong>
+                        </div>
+                        <span>{messageTime(message)}</span>
                       </div>
-                    )}
-                    <pre>{message.body}</pre>
+                      {message.subject && <span className="message-subject">{message.subject}</span>}
+                      <div className="timeline-meta-row">
+                        {message.channel && <span>{message.channel}</span>}
+                        {message.attachments?.length ? <span>{message.attachments.length} attachment(s)</span> : null}
+                        {message.intent && message.direction === "inbound" ? <span>{message.intent}</span> : null}
+                      </div>
+                      {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
+                      {reviewTicks(message).length > 0 && (
+                        <div className="review-ticks">
+                          {reviewTicks(message).map((item) => (
+                            <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                          ))}
+                        </div>
+                      )}
+                      <p>{messagePreview(message.body)}</p>
+                    </div>
                   </article>
                 ))
               ) : (
