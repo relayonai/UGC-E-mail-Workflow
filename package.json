@@ -1,0 +1,27 @@
+{
+  "name": "ugc-creator-email-tool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "validate": "UGC_DB_PATH=./data/ugc.validate.sqlite node scripts/validate.mjs",
+    "set-email-password": "node scripts/set-email-password.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "imapflow": "^1.3.3",
+    "mailparser": "^3.9.8",
+    "mammoth": "^1.12.0",
+    "next": "^16.2.4",
+    "nodemailer": "^8.0.7",
+    "pdf-parse": "^2.4.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
+  }
+}
