@@ -45,6 +45,21 @@ Restart the dev server after changing `.env.local`.
 - Matched replies are saved to `message_history`, marked as seen, and processed through intent detection.
 - Unmatched unread messages are left unread.
 
+## Creator CSV Sync
+
+The creator dashboard syncs with:
+
+```bash
+/Users/keremyilmaz/Downloads/UGC tracking - Creator Contact List.csv
+```
+
+Override it with `UGC_CREATORS_CSV_PATH` in `.env.local` if the file moves.
+
+- Opening the creators dashboard imports CSV changes first.
+- Creating, editing, deleting, emailing, or syncing replies in the tool writes creator fields back to the CSV.
+- Existing CSV columns are preserved. The tool adds mapped columns such as `Tool ID`, `Workflow Stage`, `Next Action`, and status fields.
+- Rows are matched by `Tool ID` when available, then by email/contact.
+
 ## Validation
 
 ```bash

@@ -88,6 +88,16 @@ function syncUpdateCount(items) {
   return items.reduce((count, item) => count + (item.checklist_updates?.length || 0), 0);
 }
 
+function spreadsheetStatusText(status) {
+  if (!status) return "CSV sync pending";
+  if (status.error) return `CSV sync error: ${status.error}`;
+  if (!status.enabled) return status.message || "CSV sync disabled";
+  if (status.imported || status.updated || status.written) {
+    return `CSV sync: imported ${status.imported}, updated ${status.updated}, wrote ${status.written}`;
+  }
+  return "CSV sync: up to date";
+}
+
 function hasOutboundStage(creator, stage) {
   return (creator.message_history || []).some((message) => message.direction === "outbound" && message.stage === stage);
 }
@@ -129,6 +139,7 @@ export default function Dashboard() {
   const [filters, setFilters] = useState({ search: "", stage: "", due: "" });
   const [emailBody, setEmailBody] = useState("");
   const [emailStatus, setEmailStatus] = useState(null);
+  const [spreadsheetStatus, setSpreadsheetStatus] = useState(null);
   const [syncResult, setSyncResult] = useState("");
   const [syncDetails, setSyncDetails] = useState([]);
   const [error, setError] = useState("");
@@ -144,6 +155,7 @@ export default function Dashboard() {
     const templateData = await templateResponse.json();
     const emailData = await emailResponse.json();
     setCreators(creatorData.creators || []);
+    setSpreadsheetStatus(creatorData.spreadsheet || null);
     setTemplates(templateData.templates || {});
     setWorkflow(templateData.workflow || {});
     setStages(templateData.stages || []);
@@ -198,6 +210,7 @@ export default function Dashboard() {
     });
     const data = await response.json();
     if (data.creator) {
+      if (data.spreadsheet) setSpreadsheetStatus(data.spreadsheet);
       setForm(emptyForm);
       setSelectedId(data.creator.id);
       await loadAll();
@@ -226,6 +239,7 @@ export default function Dashboard() {
     }
 
     const remaining = creators.filter((creator) => creator.id !== selected.id);
+    if (data.spreadsheet) setSpreadsheetStatus(data.spreadsheet);
     setCreators(remaining);
     setSelectedId(remaining[0]?.id || null);
     setEmailBody("");
@@ -243,6 +257,7 @@ export default function Dashboard() {
     });
     const data = await response.json();
     if (data.creator) {
+      if (data.spreadsheet) setSpreadsheetStatus(data.spreadsheet);
       setCreators((items) => items.map((item) => (item.id === data.creator.id ? data.creator : item)));
     }
     setBusy(false);
@@ -279,6 +294,7 @@ export default function Dashboard() {
       return;
     }
     if (data.creator) {
+      if (data.spreadsheet) setSpreadsheetStatus(data.spreadsheet);
       setCreators((items) => items.map((item) => (item.id === data.creator.id ? data.creator : item)));
     }
     setBusy(false);
@@ -297,6 +313,7 @@ export default function Dashboard() {
       return;
     }
     setSyncResult(`Checked ${data.checked}; processed ${data.processed.length}; already saved ${data.alreadyImported?.length || 0}; ignored ${data.ignored || 0}; unmatched UGC threads ${data.unmatched.length}.`);
+    if (data.spreadsheet) setSpreadsheetStatus(data.spreadsheet);
     setSyncDetails(data.processed || []);
     await loadAll();
     setBusy(false);
@@ -317,7 +334,12 @@ export default function Dashboard() {
         <section className="section">
           <div className="section-header">
             <h2>Creator Sheet</h2>
-            <button onClick={() => setFilters({ search: "", stage: "", due: "" })}>Clear filters</button>
+            <div className="header-actions">
+              <span className={spreadsheetStatus?.error ? "csv-sync-status error" : "csv-sync-status"}>
+                {spreadsheetStatusText(spreadsheetStatus)}
+              </span>
+              <button onClick={() => setFilters({ search: "", stage: "", due: "" })}>Clear filters</button>
+            </div>
           </div>
 
           <div className="toolbar">

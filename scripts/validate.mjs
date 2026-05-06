@@ -1,5 +1,9 @@
-import { createCreator, deleteCreator, getCreator, updateCreator } from "../lib/db.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createCreator, deleteCreator, findCreatorByEmail, getCreator, updateCreator } from "../lib/db.js";
 import { receiveReply, sendEmail } from "../lib/emailService.js";
+import { syncCreatorsWithSpreadsheet } from "../lib/spreadsheetSync.js";
 import { getTemplates, renderTemplate } from "../lib/templates.js";
 
 const creator = createCreator({
@@ -65,9 +69,42 @@ for (const [label, ok] of assertions) {
   }
 }
 
+deleteCreator(finalCreator.id);
+
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ugc-csv-sync-"));
+const csvPath = path.join(tempDir, "creators.csv");
+fs.writeFileSync(
+  csvPath,
+  [
+    "Creator Contact List,,,,,,,,",
+    ",,,,,,,,",
+    "Name,Contact,\"Handle\n[if applicable]\",Format,Outreach message sent?,\"Meeting set up?\n[if applicable]\",Meeting notes,Outcome,notes",
+    "CSV Creator,csv.creator@example.com,@csvcreator,Finance,TRUE,Yes,,Proceeding,"
+  ].join("\n"),
+  "utf8"
+);
+
+process.env.UGC_CREATORS_CSV_PATH = csvPath;
+const csvSync = await syncCreatorsWithSpreadsheet({ forceImport: true });
+const csvCreator = findCreatorByEmail("csv.creator@example.com");
+const syncedCsv = fs.readFileSync(csvPath, "utf8");
+const csvAssertions = [
+  ["csv imported creator", csvSync.imported >= 1 || csvSync.updated >= 1],
+  ["csv creator exists", Boolean(csvCreator)],
+  ["csv wrote tool id", syncedCsv.includes("Tool ID")],
+  ["csv preserved legacy notes", syncedCsv.includes("Proceeding")]
+];
+
+for (const [label, ok] of csvAssertions) {
+  if (!ok) {
+    throw new Error(`Validation failed: ${label}`);
+  }
+}
+
+if (csvCreator) deleteCreator(csvCreator.id);
+fs.rmSync(tempDir, { recursive: true, force: true });
+
 console.log("Validation passed");
 console.log(`Creator: ${finalCreator.name}`);
 console.log(`Stage: ${finalCreator.workflow_stage}`);
 console.log(`Messages: ${finalCreator.message_history.length}`);
-
-deleteCreator(finalCreator.id);

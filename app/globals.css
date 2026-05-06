@@ -161,6 +161,20 @@ textarea {
   gap: 8px;
 }
 
+.csv-sync-status {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csv-sync-status.error {
+  color: var(--danger);
+}
+
 .toolbar {
   display: grid;
   gap: 8px;

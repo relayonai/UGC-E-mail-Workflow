@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCreator } from "../../../../../lib/db.js";
 import { sendEmail } from "../../../../../lib/emailService.js";
+import { exportCreatorsToSpreadsheet } from "../../../../../lib/spreadsheetSync.js";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,13 @@ export async function POST(request, { params }) {
       stage: input.stage || creator.workflow_stage
     });
 
-    return NextResponse.json({ creator: updated });
+    let spreadsheet = null;
+    try {
+      spreadsheet = await exportCreatorsToSpreadsheet();
+    } catch (error) {
+      spreadsheet = { enabled: true, error: error.message };
+    }
+    return NextResponse.json({ creator: updated, spreadsheet });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

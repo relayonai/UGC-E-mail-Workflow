@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { createCreator, listCreators } from "../../../lib/db.js";
+import { exportCreatorsToSpreadsheet, syncCreatorsWithSpreadsheet } from "../../../lib/spreadsheetSync.js";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  return NextResponse.json({ creators: listCreators() });
+  let spreadsheet = null;
+  try {
+    spreadsheet = await syncCreatorsWithSpreadsheet();
+  } catch (error) {
+    spreadsheet = { enabled: true, error: error.message };
+  }
+  return NextResponse.json({ creators: listCreators(), spreadsheet });
 }
 
 export async function POST(request) {
@@ -12,5 +19,12 @@ export async function POST(request) {
   if (!input.name || !input.email) {
     return NextResponse.json({ error: "name and email are required" }, { status: 400 });
   }
-  return NextResponse.json({ creator: createCreator(input) }, { status: 201 });
+  const creator = createCreator(input);
+  let spreadsheet = null;
+  try {
+    spreadsheet = await exportCreatorsToSpreadsheet();
+  } catch (error) {
+    spreadsheet = { enabled: true, error: error.message };
+  }
+  return NextResponse.json({ creator, spreadsheet }, { status: 201 });
 }
