@@ -11,6 +11,10 @@ const emptyForm = {
   niche: ""
 };
 
+const FIELD_LABELS = {
+  niche: "format"
+};
+
 const EMAIL_FLOW_STEPS = [
   { stage: "First Touch Outreach", label: "First Touch", response: "Any reply" },
   { stage: "Meeting Setup", label: "Meeting Setup", response: "Call booked" },
@@ -96,6 +100,10 @@ function spreadsheetStatusText(status) {
     return `CSV sync: imported ${status.imported}, updated ${status.updated}, wrote ${status.written}`;
   }
   return "CSV sync: up to date";
+}
+
+function fieldLabel(key) {
+  return FIELD_LABELS[key] || key.replace("_", " ");
 }
 
 function hasOutboundStage(creator, stage) {
@@ -429,7 +437,7 @@ export default function Dashboard() {
                   <th>Email</th>
                   <th>Handle</th>
                   <th>Platform</th>
-                  <th>Niche</th>
+                  <th>Format</th>
                   <th>Stage</th>
                   <th>Next action</th>
                   <th>Action date</th>
@@ -468,7 +476,7 @@ export default function Dashboard() {
           <form className="creator-form" onSubmit={addCreator}>
             {Object.keys(emptyForm).map((key) => (
               <label key={key}>
-                <span className="label">{key.replace("_", " ")}</span>
+                <span className="label">{fieldLabel(key)}</span>
                 <input
                   required={key === "name" || key === "email"}
                   value={form[key]}
@@ -676,7 +684,7 @@ export default function Dashboard() {
               <form className="detail-grid" onSubmit={saveCreatorDetails}>
                 {Object.keys(emptyForm).map((key) => (
                   <label key={key}>
-                    <span className="label">{key.replace("_", " ")}</span>
+                    <span className="label">{fieldLabel(key)}</span>
                     <input
                       required={key === "name" || key === "email"}
                       value={detailDraft[key]}
@@ -707,7 +715,7 @@ export default function Dashboard() {
                 </label>
                 {["offer_status", "invoice_status", "content_status", "approval_status"].map((key) => (
                   <label key={key}>
-                    <span className="label">{key.replace("_", " ")}</span>
+                    <span className="label">{fieldLabel(key)}</span>
                     <input
                       value={selected[key] || ""}
                       onChange={(event) => saveCreator({ [key]: event.target.value })}
