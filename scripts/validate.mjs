@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createCreator, deleteCreator, findCreatorByEmail, getCreator, updateCreator } from "../lib/db.js";
+import { createCreator, deleteCreator, findCreatorByEmail, getCreator, saveStageDocumentOverride, SHARED_STAGE_DOCUMENTS_KEY, updateCreator } from "../lib/db.js";
+import { extractUploadedDocument } from "../lib/documentImport.js";
 import { receiveReply, sendEmail } from "../lib/emailService.js";
 import { syncCreatorsWithSpreadsheet } from "../lib/spreadsheetSync.js";
+import { getStageDocuments } from "../lib/templates.js";
 import { getTemplates, renderTemplate } from "../lib/templates.js";
 
 const creator = createCreator({
@@ -103,6 +105,21 @@ for (const [label, ok] of csvAssertions) {
 
 if (csvCreator) deleteCreator(csvCreator.id);
 fs.rmSync(tempDir, { recursive: true, force: true });
+
+const imageDocument = await extractUploadedDocument(new File([Buffer.from([0])], "reference.pnj", { type: "image/png" }));
+saveStageDocumentOverride(SHARED_STAGE_DOCUMENTS_KEY, [imageDocument]);
+const stageDocuments = getStageDocuments();
+const sharedDocumentAssertions = [
+  ["image placeholder imported", imageDocument.content.includes("Image reference")],
+  ["shared documents available on first stage", stageDocuments["First Touch Outreach"]?.[0]?.content === imageDocument.content],
+  ["shared documents available on later stage", stageDocuments["Retainer Offer"]?.[0]?.content === imageDocument.content]
+];
+
+for (const [label, ok] of sharedDocumentAssertions) {
+  if (!ok) {
+    throw new Error(`Validation failed: ${label}`);
+  }
+}
 
 console.log("Validation passed");
 console.log(`Creator: ${finalCreator.name}`);

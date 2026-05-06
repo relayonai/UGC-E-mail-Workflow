@@ -939,7 +939,7 @@ tr.clickable-row:hover td {
 
 .file-holder {
   background: #f8fbfb;
-  border: 1px solid var(--line);
+  border: 1px dashed var(--line-strong);
   border-radius: 8px;
   display: grid;
   gap: 10px;
@@ -947,14 +947,36 @@ tr.clickable-row:hover td {
   padding: 10px;
 }
 
+.file-holder.dragging {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
 .file-holder-head {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 10px;
   justify-content: space-between;
 }
 
-.file-holder-head > div {
+.file-holder-head > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.file-holder-head > div:first-child strong,
+.file-holder-head > div:first-child span:not(.label) {
+  overflow-wrap: anywhere;
+}
+
+.file-holder-head > div:first-child span:not(.label) {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.file-holder-head > div:last-child {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1094,7 +1116,7 @@ tr.clickable-row:hover td {
     flex-direction: column;
   }
 
-  .file-holder-head > div {
+  .file-holder-head > div:last-child {
     justify-content: flex-start;
   }
 

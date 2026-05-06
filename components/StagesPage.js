@@ -8,8 +8,10 @@ export default function StagesPage() {
   const [draft, setDraft] = useState("");
   const [documents, setDocuments] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [notice, setNotice] = useState("");
   const templateRef = useRef(null);
+  const acceptedFiles = ".pdf,.docx,.png,.pnj,.xlsx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png";
 
   async function loadStages() {
     const response = await fetch("/api/stages");
@@ -70,8 +72,8 @@ export default function StagesPage() {
     setDocuments((items) => items.filter((item) => item.id !== id));
   }
 
-  async function importDocument(event) {
-    const files = Array.from(event.target.files || []);
+  async function importFiles(fileList) {
+    const files = Array.from(fileList || []);
     if (!files.length) return;
 
     setBusy(true);
@@ -98,9 +100,19 @@ export default function StagesPage() {
       setDocuments((items) => [...items, ...imported]);
       setNotice(data.errors?.length ? `Imported ${imported.length} file(s). ${data.errors.join(" ")}` : `Imported ${imported.length} file(s).`);
     } finally {
-      event.target.value = "";
       setBusy(false);
     }
+  }
+
+  async function importDocument(event) {
+    await importFiles(event.target.files);
+    event.target.value = "";
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    setDragActive(false);
+    importFiles(event.dataTransfer.files);
   }
 
   function insertIntoTemplate(content) {
@@ -208,13 +220,28 @@ export default function StagesPage() {
                 </div>
               </div>
             )}
-            <div className="file-holder">
+            <div
+              className={dragActive ? "file-holder dragging" : "file-holder"}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={(event) => {
+                if (event.currentTarget === event.target) setDragActive(false);
+              }}
+              onDrop={handleDrop}
+            >
               <div className="file-holder-head">
-                <span className="label">file holder</span>
+                <div>
+                  <span className="label">shared file holder</span>
+                  <strong>Same documents for every workflow step</strong>
+                  <span>Drop files here or upload .pdf, .docx, .png, .pnj, .xlsx, or .pptx.</span>
+                </div>
                 <div>
                   <label className="secondary file-import">
-                    Upload file
-                    <input type="file" multiple accept=".txt,.md,.csv,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={importDocument} />
+                    Upload files
+                    <input type="file" multiple accept={acceptedFiles} onChange={importDocument} />
                   </label>
                   <button type="button" disabled={!savedDocuments.length} onClick={addAllDocumentsToTemplate}>Add All to Template</button>
                   <button type="button" onClick={addDocument}>Add Document</button>
@@ -242,7 +269,7 @@ export default function StagesPage() {
                     </article>
                   ))
                 ) : (
-                  <div className="empty">No documents in this stage yet.</div>
+                  <div className="empty">No shared documents yet. Drop files here to make them available for every workflow step.</div>
                 )}
               </div>
             </div>

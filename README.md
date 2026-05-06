@@ -60,6 +60,12 @@ Override it with `UGC_CREATORS_CSV_PATH` in `.env.local` if the file moves.
 - Existing CSV columns are preserved. The tool adds mapped columns such as `Tool ID`, `Workflow Stage`, `Next Action`, and status fields.
 - Rows are matched by `Tool ID` when available, then by email/contact.
 
+## Shared Stage Files
+
+The Stages page has one shared file holder for every workflow step. Email templates remain stage-specific, but uploaded reference files are available across all stages.
+
+Supported uploads: `.pdf`, `.docx`, `.png`, `.pnj`, `.xlsx`, and `.pptx`.
+
 ## Validation
 
 ```bash

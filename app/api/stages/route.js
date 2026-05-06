@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { saveStageDocumentOverride, saveTemplateOverride } from "../../../lib/db.js";
+import { saveStageDocumentOverride, saveTemplateOverride, SHARED_STAGE_DOCUMENTS_KEY } from "../../../lib/db.js";
 import { getStageDocuments, getTemplates } from "../../../lib/templates.js";
 import { STAGE_PHASES, WORKFLOW, WORKFLOW_PHASES, WORKFLOW_STAGES } from "../../../lib/workflow.js";
 
@@ -34,10 +34,10 @@ export async function PATCH(request) {
   const saved = saveTemplateOverride(input.stage, input.template || "");
   if (Array.isArray(input.documents)) {
     saveStageDocumentOverride(
-      input.stage,
+      SHARED_STAGE_DOCUMENTS_KEY,
       input.documents
         .map((document, index) => ({
-          id: String(document.id || `${input.stage}-${index + 1}`),
+          id: String(document.id || `shared-document-${index + 1}`),
           title: String(document.title || `Document ${index + 1}`).trim(),
           content: String(document.content || "").trim()
         }))
