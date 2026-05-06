@@ -574,6 +574,74 @@ export default function Dashboard() {
 
           <section className="section">
             <div className="section-header">
+              <h3>Previous Emails</h3>
+              {selected?.message_history?.length ? <span className="section-count">{selected.message_history.length} total</span> : null}
+            </div>
+            <div className="panel-body email-timeline">
+              {selected?.message_history?.length ? (
+                [...selected.message_history].reverse().map((message) => (
+                  <article key={message.id} className={`timeline-message ${message.direction}`}>
+                    <div className="timeline-marker" aria-hidden="true" />
+                    <div className="timeline-card">
+                      <div className="timeline-top">
+                        <div>
+                          <span className="timeline-kicker">{message.direction === "outbound" ? "Sent email" : "Creator reply"}</span>
+                          <strong>{messageLabel(message)}</strong>
+                        </div>
+                        <span>{messageTime(message)}</span>
+                      </div>
+                      {message.subject && <span className="message-subject">{message.subject}</span>}
+                      <div className="timeline-meta-row">
+                        {message.channel && <span>{message.channel}</span>}
+                        {message.attachments?.length ? <span>{message.attachments.length} attachment(s)</span> : null}
+                        {message.intent && message.direction === "inbound" ? <span>{message.intent}</span> : null}
+                      </div>
+                      {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
+                      {reviewTicks(message).length > 0 && (
+                        <div className="review-ticks">
+                          {reviewTicks(message).map((item) => (
+                            <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                          ))}
+                        </div>
+                      )}
+                      <p>{messagePreview(message.body)}</p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="empty">No messages yet.</div>
+              )}
+            </div>
+          </section>
+
+          <section className="section">
+            <div className="section-header">
+              <h3>Email Actions</h3>
+            </div>
+            <div className="panel-body">
+              {emailStatus?.mode === "real" ? (
+                <div className="notice ok">
+                  SMTP {emailStatus.smtpConfigured ? "configured" : "missing"} · IMAP {emailStatus.imapConfigured ? "configured" : "missing"}
+                </div>
+              ) : (
+                <div className="notice warn">Mock mode is active. Add `.env.local` email settings and restart to send from Warren email.</div>
+              )}
+              <label>
+                <span className="label">editable template before sending</span>
+                <textarea
+                  className="template-editor"
+                  value={emailBody}
+                  onChange={(event) => setEmailBody(event.target.value)}
+                />
+              </label>
+              <div className="email-actions">
+                <button className="primary" disabled={busy || !selected} onClick={sendCurrentEmail}>Send Current Stage Email</button>
+              </div>
+            </div>
+          </section>
+
+          <section className="section">
+            <div className="section-header">
               <h3>{selected ? selected.name : "Creator Detail"}</h3>
               {selected && (
                 <div className="header-actions">
@@ -639,74 +707,6 @@ export default function Dashboard() {
             ) : (
               <div className="empty">Add a creator to start the workflow.</div>
             )}
-          </section>
-
-          <section className="section">
-            <div className="section-header">
-              <h3>Email Actions</h3>
-            </div>
-            <div className="panel-body">
-              {emailStatus?.mode === "real" ? (
-                <div className="notice ok">
-                  SMTP {emailStatus.smtpConfigured ? "configured" : "missing"} · IMAP {emailStatus.imapConfigured ? "configured" : "missing"}
-                </div>
-              ) : (
-                <div className="notice warn">Mock mode is active. Add `.env.local` email settings and restart to send from Warren email.</div>
-              )}
-              <label>
-                <span className="label">editable template before sending</span>
-                <textarea
-                  className="template-editor"
-                  value={emailBody}
-                  onChange={(event) => setEmailBody(event.target.value)}
-                />
-              </label>
-              <div className="email-actions">
-                <button className="primary" disabled={busy || !selected} onClick={sendCurrentEmail}>Send Current Stage Email</button>
-              </div>
-            </div>
-          </section>
-
-          <section className="section">
-            <div className="section-header">
-              <h3>Previous Emails</h3>
-              {selected?.message_history?.length ? <span className="section-count">{selected.message_history.length} total</span> : null}
-            </div>
-            <div className="panel-body email-timeline">
-              {selected?.message_history?.length ? (
-                [...selected.message_history].reverse().map((message) => (
-                  <article key={message.id} className={`timeline-message ${message.direction}`}>
-                    <div className="timeline-marker" aria-hidden="true" />
-                    <div className="timeline-card">
-                      <div className="timeline-top">
-                        <div>
-                          <span className="timeline-kicker">{message.direction === "outbound" ? "Sent email" : "Creator reply"}</span>
-                          <strong>{messageLabel(message)}</strong>
-                        </div>
-                        <span>{messageTime(message)}</span>
-                      </div>
-                      {message.subject && <span className="message-subject">{message.subject}</span>}
-                      <div className="timeline-meta-row">
-                        {message.channel && <span>{message.channel}</span>}
-                        {message.attachments?.length ? <span>{message.attachments.length} attachment(s)</span> : null}
-                        {message.intent && message.direction === "inbound" ? <span>{message.intent}</span> : null}
-                      </div>
-                      {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
-                      {reviewTicks(message).length > 0 && (
-                        <div className="review-ticks">
-                          {reviewTicks(message).map((item) => (
-                            <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
-                          ))}
-                        </div>
-                      )}
-                      <p>{messagePreview(message.body)}</p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="empty">No messages yet.</div>
-              )}
-            </div>
           </section>
         </div>
       </div>
