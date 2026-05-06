@@ -45,6 +45,14 @@ function latestInboundMessage(creator) {
   return [...(creator.message_history || [])].reverse().find((message) => message.direction === "inbound") || null;
 }
 
+function reviewTicks(message) {
+  return message?.review?.checklist_updates || [];
+}
+
+function reviewSummary(message) {
+  return message?.review?.summary || "";
+}
+
 function hasOutboundStage(creator, stage) {
   return (creator.message_history || []).some((message) => message.direction === "outbound" && message.stage === stage);
 }
@@ -326,7 +334,7 @@ export default function Dashboard() {
                   </div>
                   <div className="creator-card-footer">
                     <span>{creator.message_history?.length || 0} emails</span>
-                    <span>{lastReply ? `reply: ${lastReply.intent || "received"}` : last ? `${last.direction} ${shortDate(last.sent_at || last.received_at)}` : "No history"}</span>
+                    <span>{lastReply ? `reply: ${reviewTicks(lastReply)[0]?.label || lastReply.intent || "received"}` : last ? `${last.direction} ${shortDate(last.sent_at || last.received_at)}` : "No history"}</span>
                   </div>
                   <Link
                     className="detail-link"
@@ -435,6 +443,14 @@ export default function Dashboard() {
                         <span className={`pill ${statusPill(latestReply.intent)}`}>{latestReply.intent || "received"}</span>
                       </div>
                       {latestReply.subject && <span className="latest-response-subject">{latestReply.subject}</span>}
+                      {reviewSummary(latestReply) && <span className="review-summary">{reviewSummary(latestReply)}</span>}
+                      {reviewTicks(latestReply).length > 0 && (
+                        <div className="review-ticks">
+                          {reviewTicks(latestReply).map((item) => (
+                            <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                          ))}
+                        </div>
+                      )}
                       <pre>{latestReply.body}</pre>
                     </div>
                   ) : null;
@@ -446,7 +462,14 @@ export default function Dashboard() {
                     {syncDetails.map((item) => (
                       <div key={`${item.creator_id}-${item.subject}-${item.intent}`}>
                         <strong>{item.creator_name}</strong>
-                        <span>{item.intent || "received"} - {item.subject || item.from}</span>
+                        <span>{item.summary || item.intent || "received"} - {item.subject || item.from}</span>
+                        {item.checklist_updates?.length > 0 && (
+                          <div className="review-ticks compact">
+                            {item.checklist_updates.map((update) => (
+                              <span key={`${update.key}-${update.value}`} className="review-tick">{update.label}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -606,6 +629,14 @@ export default function Dashboard() {
                       <span>{shortDate(message.sent_at || message.received_at)}</span>
                     </div>
                     {message.subject && <strong className="message-subject">{message.subject}</strong>}
+                    {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
+                    {reviewTicks(message).length > 0 && (
+                      <div className="review-ticks">
+                        {reviewTicks(message).map((item) => (
+                          <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                        ))}
+                      </div>
+                    )}
                     <pre>{message.body}</pre>
                   </article>
                 ))

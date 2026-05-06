@@ -12,5 +12,5 @@ export async function POST(request, { params }) {
   if (!creator) return NextResponse.json({ error: "Creator not found" }, { status: 404 });
 
   const lastMessage = creator.message_history[creator.message_history.length - 1];
-  return NextResponse.json({ creator, intent: lastMessage.intent });
+  return NextResponse.json({ creator, intent: lastMessage.intent, review: lastMessage.review });
 }

@@ -11,6 +11,14 @@ function latestInboundMessage(creator) {
   return [...(creator?.message_history || [])].reverse().find((message) => message.direction === "inbound") || null;
 }
 
+function reviewTicks(message) {
+  return message?.review?.checklist_updates || [];
+}
+
+function reviewSummary(message) {
+  return message?.review?.summary || "";
+}
+
 export default function CreatorDetailPage({ creatorId }) {
   const [creator, setCreator] = useState(null);
   const [stages, setStages] = useState([]);
@@ -91,7 +99,8 @@ export default function CreatorDetailPage({ creatorId }) {
     setNotice("");
     const response = await fetch("/api/email/sync", { method: "POST" });
     const data = await response.json();
-    setNotice(response.ok ? `Inbox synced. Processed ${data.processed.length} matched replies.` : data.error);
+    const updates = data.processed?.flatMap((item) => item.checklist_updates || []) || [];
+    setNotice(response.ok ? `Inbox synced. Processed ${data.processed.length} matched replies. Updated ${updates.length} checklist item(s).` : data.error);
     await loadCreator();
     setBusy(false);
   }
@@ -134,8 +143,16 @@ export default function CreatorDetailPage({ creatorId }) {
               <div className="latest-response">
                 <div className="latest-response-head">
                   <strong>Latest response</strong>
-                  <span className="pill ok">{latestReply.intent || "received"}</span>
+                  <span className="pill ok">{reviewTicks(latestReply)[0]?.label || latestReply.intent || "received"}</span>
                 </div>
+                {reviewSummary(latestReply) && <span className="review-summary">{reviewSummary(latestReply)}</span>}
+                {reviewTicks(latestReply).length > 0 && (
+                  <div className="review-ticks">
+                    {reviewTicks(latestReply).map((item) => (
+                      <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                    ))}
+                  </div>
+                )}
                 <pre>{latestReply.body}</pre>
               </div>
             )}
@@ -177,6 +194,14 @@ export default function CreatorDetailPage({ creatorId }) {
                   <span>{shortDate(message.sent_at || message.received_at)}</span>
                 </div>
                 {message.subject && <strong className="message-subject">{message.subject}</strong>}
+                {reviewSummary(message) && <span className="review-summary">{reviewSummary(message)}</span>}
+                {reviewTicks(message).length > 0 && (
+                  <div className="review-ticks">
+                    {reviewTicks(message).map((item) => (
+                      <span key={`${item.key}-${item.value}`} className="review-tick">{item.label}</span>
+                    ))}
+                  </div>
+                )}
                 <pre>{message.body}</pre>
               </article>
             ))}

@@ -39,6 +39,9 @@ receiveReply(creator.id, { body: "Invoice attached." });
 receiveReply(creator.id, { body: "I uploaded the content files to Drive." });
 
 const finalCreator = getCreator(creator.id);
+const inboundMessages = finalCreator.message_history.filter((message) => message.direction === "inbound");
+const invoiceMessage = inboundMessages.find((message) => message.intent === "invoice sent");
+const contentMessage = inboundMessages.find((message) => message.intent === "content sent");
 
 const assertions = [
   ["creator exists", Boolean(finalCreator)],
@@ -47,7 +50,9 @@ const assertions = [
   ["invoice received", finalCreator.invoice_status === "received"],
   ["content received", finalCreator.content_status === "received"],
   ["stage moved through content flow", finalCreator.workflow_stage === "Thank You + Final Check"],
-  ["meeting setup absent", !["Meeting Setup"].includes(finalCreator.workflow_stage)]
+  ["meeting setup absent", !["Meeting Setup"].includes(finalCreator.workflow_stage)],
+  ["invoice review saved", invoiceMessage?.review?.checklist_updates?.some((item) => item.label === "Invoice received")],
+  ["content review saved", contentMessage?.review?.checklist_updates?.some((item) => item.label === "Content received")]
 ];
 
 for (const [label, ok] of assertions) {

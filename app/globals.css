@@ -480,13 +480,13 @@ tr.clickable-row:hover td {
   margin-bottom: 10px;
 }
 
-.sync-detail-list div {
+.sync-detail-list > div {
   display: grid;
   gap: 3px;
   padding: 8px;
 }
 
-.sync-detail-list div + div {
+.sync-detail-list > div + div {
   border-top: 1px solid var(--line);
 }
 
@@ -494,6 +494,36 @@ tr.clickable-row:hover td {
   color: var(--muted);
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.review-summary {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.review-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.review-ticks.compact {
+  margin: 4px 0 0;
+}
+
+.review-tick {
+  background: #e9f7ef;
+  border: 1px solid #9dd8b6;
+  border-radius: 999px;
+  color: #17643a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 4px 8px;
 }
 
 .email-actions,
