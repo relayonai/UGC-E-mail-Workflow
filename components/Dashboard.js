@@ -106,8 +106,23 @@ function fieldLabel(key) {
   return FIELD_LABELS[key] || key.replace("_", " ");
 }
 
+const DEFAULT_EMAIL_SUBJECTS = {
+  "First Touch Outreach": "Quick intro from Warren UGC",
+  "Meeting Setup": "Following up on our call",
+  "After First Call": "Great speaking with you",
+  "Content Brief Offer": "A quick project update",
+  "No Offer": "Checking in",
+  "Offer Acceptance Chase": "Following up on the proposal",
+  "Pre-Invoice Chase": "Invoice request",
+  "Content Chase": "Content delivery follow-up",
+  "Post-Invoice Chase": "Payment and delivery follow-up",
+  "Thank You + Final Check": "Final approval check",
+  "Repurposing Request": "Repurposing request",
+  "Retainer Offer": "Ongoing collaboration"
+};
+
 function defaultEmailSubject(stage) {
-  return `Meet Warren UGC - ${stage}`;
+  return DEFAULT_EMAIL_SUBJECTS[stage] || "Quick update from Warren UGC";
 }
 
 function hasOutboundStage(creator, stage) {
