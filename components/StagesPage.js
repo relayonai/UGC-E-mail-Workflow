@@ -321,16 +321,14 @@ export default function StagesPage() {
                         event.dataTransfer.setData("application/x-stage-document", document.id);
                       }}
                       onDragEnd={() => setTemplateDragActive(false)}
-                    >
+                      >
                       <div className="stage-document-head">
                         <button type="button" className="document-icon" onClick={() => openDocument(document)} aria-label={`Open ${document.title || "document"} preview`}>
                           <span className="document-icon-badge">{documentLabel(document)}</span>
                           <span className="document-icon-fold" aria-hidden="true" />
+                          <span className="document-icon-title" title={document.title || `Document ${index + 1}`}>{document.title || `Document ${index + 1}`}</span>
                         </button>
-                        <div className="stage-document-copy">
-                          <strong title={document.title || `Document ${index + 1}`}>{document.title || `Document ${index + 1}`}</strong>
-                          <span>{documentSummary(document)}</span>
-                        </div>
+                        <div className="stage-document-summary">{documentSummary(document)}</div>
                       </div>
                       <div className="stage-document-actions">
                         <button type="button" onClick={() => openDocument(document)}>Open</button>
