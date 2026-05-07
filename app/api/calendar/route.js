@@ -12,25 +12,29 @@ function resolveWindow(searchParams) {
 }
 
 export async function GET(request) {
-  const url = new URL(request.url);
-  const calendarId = url.searchParams.get("calendarId") || getGoogleCalendarConfig().calendarId;
-  const window = resolveWindow(url.searchParams);
-  const { status, events } = await listGoogleCalendarEvents({
-    calendarId,
-    ...window
-  });
-  const notes = listCalendarNotes(calendarId);
-  const notesByEvent = new Map(notes.map((note) => [note.event_id, note]));
+  try {
+    const url = new URL(request.url);
+    const calendarId = url.searchParams.get("calendarId") || getGoogleCalendarConfig().calendarId;
+    const window = resolveWindow(url.searchParams);
+    const { status, events } = await listGoogleCalendarEvents({
+      calendarId,
+      ...window
+    });
+    const notes = listCalendarNotes(calendarId);
+    const notesByEvent = new Map(notes.map((note) => [note.event_id, note]));
 
-  return NextResponse.json({
-    calendar: status,
-    events: events.map((event) => ({
-      ...event,
-      notes: notesByEvent.get(event.id)?.notes || "",
-      script: notesByEvent.get(event.id)?.script || "",
-      local: notesByEvent.get(event.id) || null
-    }))
-  });
+    return NextResponse.json({
+      calendar: status,
+      events: events.map((event) => ({
+        ...event,
+        notes: notesByEvent.get(event.id)?.notes || "",
+        script: notesByEvent.get(event.id)?.script || "",
+        local: notesByEvent.get(event.id) || null
+      }))
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message || "Calendar could not be loaded" }, { status: 500 });
+  }
 }
 
 export async function PATCH(request) {
