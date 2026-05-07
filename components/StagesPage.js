@@ -328,8 +328,8 @@ export default function StagesPage() {
                           <span className="document-icon-fold" aria-hidden="true" />
                           <span className="document-icon-title" title={document.title || `Document ${index + 1}`}>{document.title || `Document ${index + 1}`}</span>
                         </button>
-                        <div className="stage-document-summary">{documentSummary(document)}</div>
                       </div>
+                      <div className="stage-document-summary">{documentSummary(document)}</div>
                       <div className="stage-document-actions">
                         <button type="button" onClick={() => openDocument(document)}>Open</button>
                         <button type="button" onClick={() => insertDocumentIntoTemplate(document)}>Add to Template</button>
