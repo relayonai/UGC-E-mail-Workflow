@@ -106,6 +106,10 @@ function fieldLabel(key) {
   return FIELD_LABELS[key] || key.replace("_", " ");
 }
 
+function defaultEmailSubject(stage) {
+  return `Meet Warren UGC - ${stage}`;
+}
+
 function hasOutboundStage(creator, stage) {
   return (creator.message_history || []).some((message) => message.direction === "outbound" && message.stage === stage);
 }
@@ -146,6 +150,7 @@ export default function Dashboard() {
   const [detailDraft, setDetailDraft] = useState(emptyForm);
   const [filters, setFilters] = useState({ search: "", stage: "", due: "" });
   const [emailBody, setEmailBody] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
   const [emailStatus, setEmailStatus] = useState(null);
   const [spreadsheetStatus, setSpreadsheetStatus] = useState(null);
   const [syncResult, setSyncResult] = useState("");
@@ -185,6 +190,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!selected) return;
     previewTemplate(selected.workflow_stage, selected);
+    setEmailSubject(defaultEmailSubject(selected.workflow_stage));
     setDetailDraft({
       name: selected.name || "",
       email: selected.email || "",
@@ -291,7 +297,7 @@ export default function Dashboard() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         stage: selected.workflow_stage,
-        subject: `Meet Warren UGC - ${selected.workflow_stage}`,
+        subject: emailSubject.trim() || defaultEmailSubject(selected.workflow_stage),
         body: emailBody
       })
     });
@@ -656,6 +662,14 @@ export default function Dashboard() {
               ) : (
                 <div className="notice warn">Mock mode is active. Add `.env.local` email settings and restart to send from Warren email.</div>
               )}
+              <label>
+                <span className="label">email subject</span>
+                <input
+                  value={emailSubject}
+                  onChange={(event) => setEmailSubject(event.target.value)}
+                  placeholder="Subject line"
+                />
+              </label>
               <label>
                 <span className="label">editable template before sending</span>
                 <textarea
