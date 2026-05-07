@@ -998,8 +998,11 @@ tr.clickable-row:hover td {
 }
 
 .stage-documents {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
 }
 
 .stage-document {
@@ -1007,9 +1010,11 @@ tr.clickable-row:hover td {
   border: 1px solid var(--line);
   border-radius: 8px;
   cursor: grab;
+  flex: 0 0 260px;
   display: grid;
   gap: 10px;
   padding: 10px;
+  scroll-snap-align: start;
 }
 
 .stage-document-head {
@@ -1290,6 +1295,17 @@ tr.clickable-row:hover td {
 
   .stage-document-actions button {
     flex: 1 1 auto;
+  }
+
+  .stage-documents {
+    flex-direction: column;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .stage-document {
+    flex-basis: auto;
+    width: 100%;
   }
 
   .file-holder-head {
