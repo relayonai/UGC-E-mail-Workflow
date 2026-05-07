@@ -324,24 +324,19 @@ export default function StagesPage() {
                     >
                       <div className="stage-document-head">
                         <button type="button" className="document-icon" onClick={() => openDocument(document)} aria-label={`Open ${document.title || "document"} preview`}>
-                          <span>{documentLabel(document)}</span>
+                          <span className="document-icon-badge">{documentLabel(document)}</span>
+                          <span className="document-icon-fold" aria-hidden="true" />
                         </button>
-                        <input
-                          value={document.title || ""}
-                          onChange={(event) => updateDocument(document.id, { title: event.target.value })}
-                          placeholder={`Document ${index + 1}`}
-                        />
+                        <div className="stage-document-copy">
+                          <strong title={document.title || `Document ${index + 1}`}>{document.title || `Document ${index + 1}`}</strong>
+                          <span>{documentSummary(document)}</span>
+                        </div>
+                      </div>
+                      <div className="stage-document-actions">
                         <button type="button" onClick={() => openDocument(document)}>Open</button>
                         <button type="button" onClick={() => insertDocumentIntoTemplate(document)}>Add to Template</button>
                         <button type="button" className="danger" onClick={() => deleteDocument(document.id)}>Delete</button>
                       </div>
-                      <div className="stage-document-summary">{documentSummary(document)}</div>
-                      <textarea
-                        className="document-editor"
-                        value={document.content || ""}
-                        onChange={(event) => updateDocument(document.id, { content: event.target.value })}
-                        placeholder={document.kind === "image" ? "Image reference and notes." : "Paste document text here."}
-                      />
                     </article>
                   ))
                 ) : (

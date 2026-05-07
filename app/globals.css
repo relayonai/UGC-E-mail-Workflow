@@ -1008,15 +1008,15 @@ tr.clickable-row:hover td {
   border-radius: 8px;
   cursor: grab;
   display: grid;
-  gap: 8px;
-  padding: 8px;
+  gap: 10px;
+  padding: 10px;
 }
 
 .stage-document-head {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: auto minmax(160px, 1fr) auto auto auto;
   align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .stage-document-head button {
@@ -1024,29 +1024,69 @@ tr.clickable-row:hover td {
 }
 
 .stage-document-head .document-icon {
-  align-items: center;
+  align-items: stretch;
   background: var(--panel);
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: 10px;
   color: var(--ink);
-  display: inline-flex;
+  display: grid;
   font-size: 11px;
   font-weight: 700;
-  justify-content: center;
-  min-width: 54px;
-  padding: 7px 8px;
+  justify-items: center;
+  min-width: 74px;
+  padding: 8px;
+  position: relative;
   text-transform: uppercase;
 }
 
-.stage-document-head .document-icon span {
-  display: block;
-  line-height: 1;
+.stage-document-head .document-icon-badge {
+  align-items: center;
+  background: linear-gradient(180deg, #f8fafc, #e5edf7);
+  border: 1px solid #c7d2e1;
+  border-radius: 8px;
+  color: #334155;
+  display: flex;
+  height: 64px;
+  justify-content: center;
+  position: relative;
+  width: 52px;
 }
 
-.stage-document-summary {
+.stage-document-head .document-icon-fold {
+  background: linear-gradient(135deg, transparent 0 50%, #c7d2e1 50% 100%);
+  border-top-right-radius: 8px;
+  height: 14px;
+  position: absolute;
+  right: 17px;
+  top: 12px;
+  width: 14px;
+}
+
+.stage-document-copy {
+  align-self: center;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stage-document-copy strong {
+  font-size: 14px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-document-copy span {
   color: var(--muted);
   font-size: 12px;
-  padding-inline: 2px;
+  line-height: 1.3;
+}
+
+.stage-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .stage-document.dragging {
@@ -1057,12 +1097,6 @@ tr.clickable-row:hover td {
   background: var(--danger-soft);
   border-color: #e4a49d;
   color: var(--danger);
-}
-
-.document-editor {
-  font-family: Arial, Helvetica, sans-serif;
-  line-height: 1.35;
-  min-height: 104px;
 }
 
 .template-editor.drop-target {
@@ -1248,6 +1282,14 @@ tr.clickable-row:hover td {
 
   .stage-document-head {
     justify-items: start;
+  }
+
+  .stage-document-actions {
+    width: 100%;
+  }
+
+  .stage-document-actions button {
+    flex: 1 1 auto;
   }
 
   .file-holder-head {
