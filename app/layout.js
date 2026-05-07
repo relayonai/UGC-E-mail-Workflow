@@ -13,6 +13,7 @@ export default function RootLayout({ children }) {
         <nav className="app-nav">
           <Link href="/creators">Creators</Link>
           <Link href="/stages">Stages</Link>
+          <Link href="/calendar">Calendar</Link>
         </nav>
         {children}
       </body>
