@@ -107,12 +107,12 @@ function fieldLabel(key) {
 }
 
 const DEFAULT_EMAIL_SUBJECTS = {
-  "First Touch Outreach": "Quick intro from Warren UGC",
-  "Meeting Setup": "Following up on our call",
-  "After First Call": "Great speaking with you",
-  "Content Brief Offer": "A quick project update",
+  "First Touch Outreach": "Quick introduction",
+  "Meeting Setup": "Follow-up on our call",
+  "After First Call": "Pleasure speaking with you",
+  "Content Brief Offer": "Project update",
   "No Offer": "Checking in",
-  "Offer Acceptance Chase": "Following up on the proposal",
+  "Offer Acceptance Chase": "Follow-up on the proposal",
   "Pre-Invoice Chase": "Invoice request",
   "Content Chase": "Content delivery follow-up",
   "Post-Invoice Chase": "Payment and delivery follow-up",
@@ -122,7 +122,7 @@ const DEFAULT_EMAIL_SUBJECTS = {
 };
 
 function defaultEmailSubject(stage) {
-  return DEFAULT_EMAIL_SUBJECTS[stage] || "Quick update from Warren UGC";
+  return `Meet Warren UGC: ${DEFAULT_EMAIL_SUBJECTS[stage] || "Quick update"}`;
 }
 
 function hasOutboundStage(creator, stage) {
