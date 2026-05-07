@@ -18,6 +18,21 @@ function stageRows() {
   }));
 }
 
+function normalizeDocument(document, index) {
+  const content = String(document.content || "").trim();
+  const dataUrl = typeof document.dataUrl === "string" ? document.dataUrl : "";
+  return {
+    id: String(document.id || `shared-document-${index + 1}`),
+    title: String(document.title || `Document ${index + 1}`).trim(),
+    content,
+    kind: document.kind === "image" ? "image" : "text",
+    mimeType: typeof document.mimeType === "string" ? document.mimeType : "",
+    fileName: typeof document.fileName === "string" ? document.fileName : "",
+    dataUrl,
+    previewHtml: typeof document.previewHtml === "string" ? document.previewHtml : ""
+  };
+}
+
 export async function GET() {
   return NextResponse.json({
     phases: WORKFLOW_PHASES,
@@ -36,12 +51,8 @@ export async function PATCH(request) {
     saveStageDocumentOverride(
       SHARED_STAGE_DOCUMENTS_KEY,
       input.documents
-        .map((document, index) => ({
-          id: String(document.id || `shared-document-${index + 1}`),
-          title: String(document.title || `Document ${index + 1}`).trim(),
-          content: String(document.content || "").trim()
-        }))
-        .filter((document) => document.content)
+        .map(normalizeDocument)
+        .filter((document) => document.content || document.dataUrl || document.previewHtml)
     );
   }
   return NextResponse.json({

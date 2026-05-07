@@ -2,6 +2,34 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+function documentLabel(document) {
+  const name = document.fileName || document.title || "Document";
+  const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+  if (document.kind === "image") return "Image";
+  if (ext === "pdf") return "PDF";
+  if (ext === "docx") return "Word";
+  if (ext === "xlsx") return "Excel";
+  if (ext === "pptx") return "Slides";
+  return "File";
+}
+
+function documentSummary(document) {
+  if (document.kind === "image") return document.fileName || document.title || "Uploaded image";
+  if (document.previewHtml) return "Formatted preview available";
+  return document.mimeType || "Document";
+}
+
+function wrapPreviewHtml(html) {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    :root { color-scheme: light; }
+    body { margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #1e293b; background: #fff; }
+    img { max-width: 100%; height: auto; }
+    table { border-collapse: collapse; max-width: 100%; }
+    td, th { border: 1px solid #d1d5db; padding: 6px 8px; vertical-align: top; }
+    p { margin: 0 0 10px; }
+  </style></head><body>${html}</body></html>`;
+}
+
 export default function StagesPage() {
   const [stages, setStages] = useState([]);
   const [selectedStage, setSelectedStage] = useState("");
@@ -9,6 +37,8 @@ export default function StagesPage() {
   const [documents, setDocuments] = useState([]);
   const [busy, setBusy] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [templateDragActive, setTemplateDragActive] = useState(false);
+  const [previewDocumentId, setPreviewDocumentId] = useState("");
   const [notice, setNotice] = useState("");
   const templateRef = useRef(null);
   const acceptedFiles = ".pdf,.docx,.png,.pnj,.xlsx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/png";
@@ -33,6 +63,11 @@ export default function StagesPage() {
     [stages, selectedStage]
   );
 
+  const previewDocument = useMemo(
+    () => documents.find((document) => document.id === previewDocumentId) || null,
+    [documents, previewDocumentId]
+  );
+
   function selectStage(stage) {
     setSelectedStage(stage.stage);
     setDraft(stage.template || "");
@@ -45,9 +80,14 @@ export default function StagesPage() {
       .map((document, index) => ({
         id: document.id || `document-${index + 1}`,
         title: document.title || `Document ${index + 1}`,
-        content: document.content || ""
+        content: document.content || "",
+        kind: document.kind === "image" ? "image" : "text",
+        mimeType: document.mimeType || "",
+        fileName: document.fileName || "",
+        dataUrl: document.dataUrl || "",
+        previewHtml: document.previewHtml || ""
       }))
-      .filter((document) => document.content.trim()),
+      .filter((document) => document.content.trim() || document.dataUrl || document.previewHtml),
     [documents]
   );
 
@@ -95,7 +135,12 @@ export default function StagesPage() {
       const imported = (data.documents || []).map((document) => ({
         id: newDocumentId(),
         title: document.title,
-        content: document.content
+        content: document.content,
+        kind: document.kind || "text",
+        mimeType: document.mimeType || "",
+        fileName: document.fileName || "",
+        dataUrl: document.dataUrl || "",
+        previewHtml: document.previewHtml || ""
       }));
       setDocuments((items) => [...items, ...imported]);
       setNotice(data.errors?.length ? `Imported ${imported.length} file(s). ${data.errors.join(" ")}` : `Imported ${imported.length} file(s).`);
@@ -113,6 +158,27 @@ export default function StagesPage() {
     event.preventDefault();
     setDragActive(false);
     importFiles(event.dataTransfer.files);
+  }
+
+  function openDocument(document) {
+    setPreviewDocumentId(document.id);
+  }
+
+  function closePreview() {
+    setPreviewDocumentId("");
+  }
+
+  function insertDocumentIntoTemplate(document) {
+    insertIntoTemplate(document.content || "");
+    setNotice(`${document.title || "Document"} added to the template. Save to make it the default email.`);
+  }
+
+  function handleTemplateDrop(event) {
+    event.preventDefault();
+    setTemplateDragActive(false);
+    const documentId = event.dataTransfer.getData("text/plain") || event.dataTransfer.getData("application/x-stage-document");
+    const document = documents.find((item) => item.id === documentId);
+    if (document) insertDocumentIntoTemplate(document);
   }
 
   function insertIntoTemplate(content) {
@@ -139,11 +205,6 @@ export default function StagesPage() {
       const cursor = before.length + needsBeforeSpace.length + insertion.length;
       editor.setSelectionRange(cursor, cursor);
     });
-  }
-
-  function addDocumentToTemplate(document) {
-    insertIntoTemplate(document.content || "");
-    setNotice(`${document.title || "Document"} added to the template. Save to make it the default email.`);
   }
 
   function addAllDocumentsToTemplate() {
@@ -250,21 +311,36 @@ export default function StagesPage() {
               <div className="stage-documents">
                 {documents.length ? (
                   documents.map((document, index) => (
-                    <article key={document.id || index} className="stage-document">
+                    <article
+                      key={document.id || index}
+                      className="stage-document"
+                      draggable
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "copy";
+                        event.dataTransfer.setData("text/plain", document.id);
+                        event.dataTransfer.setData("application/x-stage-document", document.id);
+                      }}
+                      onDragEnd={() => setTemplateDragActive(false)}
+                    >
                       <div className="stage-document-head">
+                        <button type="button" className="document-icon" onClick={() => openDocument(document)} aria-label={`Open ${document.title || "document"} preview`}>
+                          <span>{documentLabel(document)}</span>
+                        </button>
                         <input
                           value={document.title || ""}
                           onChange={(event) => updateDocument(document.id, { title: event.target.value })}
                           placeholder={`Document ${index + 1}`}
                         />
-                        <button type="button" onClick={() => addDocumentToTemplate(document)}>Add to Template</button>
+                        <button type="button" onClick={() => openDocument(document)}>Open</button>
+                        <button type="button" onClick={() => insertDocumentIntoTemplate(document)}>Add to Template</button>
                         <button type="button" className="danger" onClick={() => deleteDocument(document.id)}>Delete</button>
                       </div>
+                      <div className="stage-document-summary">{documentSummary(document)}</div>
                       <textarea
                         className="document-editor"
                         value={document.content || ""}
                         onChange={(event) => updateDocument(document.id, { content: event.target.value })}
-                        placeholder="Paste document text here."
+                        placeholder={document.kind === "image" ? "Image reference and notes." : "Paste document text here."}
                       />
                     </article>
                   ))
@@ -277,14 +353,62 @@ export default function StagesPage() {
               <span className="label">email template</span>
               <textarea
                 ref={templateRef}
-                className="template-editor"
+                className={templateDragActive ? "template-editor drop-target" : "template-editor"}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setTemplateDragActive(true);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={(event) => {
+                  if (event.currentTarget === event.target) setTemplateDragActive(false);
+                }}
+                onDrop={handleTemplateDrop}
               />
             </label>
           </div>
         </section>
       </div>
+
+      {previewDocument ? (
+        <div className="document-modal-backdrop" onClick={closePreview}>
+          <div className="document-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="document-modal-head">
+              <div>
+                <span className="label">document preview</span>
+                <strong>{previewDocument.title || "Document"}</strong>
+                <span>{documentLabel(previewDocument)} · {previewDocument.mimeType || previewDocument.fileName || "uploaded file"}</span>
+              </div>
+              <div className="document-modal-actions">
+                {previewDocument.dataUrl ? (
+                  <a className="secondary" href={previewDocument.dataUrl} download={previewDocument.fileName || `${previewDocument.title || "document"}`}>
+                    Open original
+                  </a>
+                ) : null}
+                <button type="button" className="primary" onClick={() => insertDocumentIntoTemplate(previewDocument)}>
+                  Add to Template
+                </button>
+                <button type="button" onClick={closePreview}>Close</button>
+              </div>
+            </div>
+            <div className="document-modal-body">
+              {previewDocument.previewHtml ? (
+                <iframe title={previewDocument.title || "Document preview"} className="document-preview-frame" srcDoc={wrapPreviewHtml(previewDocument.previewHtml)} />
+              ) : previewDocument.dataUrl && previewDocument.mimeType?.startsWith("application/pdf") ? (
+                <iframe title={previewDocument.title || "PDF preview"} className="document-preview-frame" src={previewDocument.dataUrl} />
+              ) : previewDocument.dataUrl && previewDocument.kind === "image" ? (
+                <img className="document-preview-image" src={previewDocument.dataUrl} alt={previewDocument.title || "Uploaded image"} />
+              ) : previewDocument.dataUrl ? (
+                <iframe title={previewDocument.title || "Document preview"} className="document-preview-frame" src={previewDocument.dataUrl} />
+              ) : (
+                <pre className="document-preview-text">{previewDocument.content || "No preview available."}</pre>
+              )}
+            </div>
+            {previewDocument.content ? <pre className="document-modal-text">{previewDocument.content}</pre> : null}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
